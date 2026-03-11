@@ -16,7 +16,7 @@ const Favourites = () => {
 
   const fetchRecommended = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/products/get");
+      const res = await fetch("https://rr-mobiles-backend.onrender.com/api/products/get");
       const data = await res.json();
 
       if (data.success) {

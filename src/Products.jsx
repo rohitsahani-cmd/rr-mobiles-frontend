@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiHeart } from "react-icons/fi";
 import { FaFire } from "react-icons/fa";
 import { toast } from "react-toastify";
+
 const heroImages = [
   "../hero/1.jpg",
   "../hero/2.jpg",
@@ -71,7 +72,7 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/products/get");
+      const res = await fetch("https://rr-mobiles-backend.onrender.com/api/products/get");
       const data = await res.json();
 
       if (data.success) {
@@ -86,7 +87,7 @@ const Products = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`http://localhost:8000/api/products/delete/${id}`, {
+      const res = await fetch(`https://rr-mobiles-backend.onrender.com/api/products/delete/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

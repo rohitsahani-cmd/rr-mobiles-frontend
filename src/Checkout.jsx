@@ -65,7 +65,7 @@ const Checkout = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:8000/api/orders/place-order", {
+      const res = await fetch("https://rr-mobiles-backend.onrender.com/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
