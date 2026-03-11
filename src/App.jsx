@@ -3,15 +3,14 @@ import "./index.css";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 
-import AddProduct from "./Addproduct";
 import "react-toastify/dist/ReactToastify.css";
 import Layout from "./components/ui/authcomponent/Auth";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Adminview from "./components/ui/adminview/Adminview";
-
+import AddProduct from "./AddProduct";
 import Home from "./components/Home";
-import Shop from "./components/Shop";
+
 import Checkauth from "./components/commoncomponent/Checkauth";
 import { ToastContainer } from "react-toastify";
 import Products from "./Products";
