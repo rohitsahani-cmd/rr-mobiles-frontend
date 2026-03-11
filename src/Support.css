@@ -1,0 +1,42 @@
+.contact-container {
+  min-height: 80vh;
+  padding: 80px 20px;
+  text-align: center;
+  background: black;
+  color: white;
+}
+
+.contact-card {
+  margin-top: 30px;
+  font-size: 18px;
+  line-height: 2;
+}
+
+.contact-buttons {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.whatsapp-btn {
+  padding: 12px 24px;
+  background: #25D366;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.call-btn {
+  padding: 12px 24px;
+  background: #ef8521;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.whatsapp-btn:hover,
+.call-btn:hover {
+  transform: scale(1.05);
+  transition: 0.3s;
+}
