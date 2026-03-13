@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+const API_BASE_URL = "http://localhost:8000";
+
 const Checkout = () => {
   const user = JSON.parse(localStorage.getItem("loggedInUser"));
   const cartKey = user ? `cart_${user.id}` : "cart_guest";
@@ -27,13 +29,23 @@ const Checkout = () => {
   }, [cartItems]);
 
   const deliveryCharge = cartItems.length > 0 ? 49 : 0;
-  const total = subtotal + deliveryCharge;
+  const total = subtotal ;
 
   const handleChange = (e) => {
     setAddress({ ...address, [e.target.name]: e.target.value });
   };
 
-  const handlePlaceOrder = async () => {
+  const validateAddress = () => {
+    if (!user) {
+      alert("Please login first");
+      return false;
+    }
+
+    if (cartItems.length === 0) {
+      alert("Your cart is empty");
+      return false;
+    }
+
     if (
       !address.fullName ||
       !address.phone ||
@@ -43,48 +55,159 @@ const Checkout = () => {
       !address.street
     ) {
       alert("Please fill all address fields");
-      return;
+      return false;
     }
 
-    const token = localStorage.getItem("token");
+    return true;
+  };
 
-    const payload = {
-      items: cartItems.map((item) => ({
-        productId: item._id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image,
-        category: item.category,
-      })),
-      address,
-      subtotal,
-      deliveryCharge,
-      total,
-      paymentMethod: "COD",
-    };
+  const buildPayload = (paymentMethod) => ({
+    items: cartItems.map((item) => ({
+      productId: item._id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      image: item.image,
+      category: item.category,
+    })),
+    address,
+    subtotal,
+    deliveryCharge,
+    total,
+    paymentMethod,
+  });
+
+  const placeFinalOrder = async (payload, token) => {
+    const res = await fetch(`${API_BASE_URL}/api/orders/place-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return await res.json();
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!validateAddress()) return;
+
+    const token = localStorage.getItem("token");
+    const payload = buildPayload("COD");
 
     try {
-      const res = await fetch("https://rr-mobiles-backend.onrender.com/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
+      const data = await placeFinalOrder(payload, token);
 
       if (data.success) {
         alert("Order placed successfully");
         localStorage.removeItem(cartKey);
         window.location.href = "/home/orders";
       } else {
-        alert(data.message);
+        alert(data.message || "Failed to place order");
       }
     } catch (error) {
       console.log("Place order error:", error);
+      alert("Something went wrong");
+    }
+  };
+
+  const loadScript = (src) => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = src;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async () => {
+    if (!validateAddress()) return;
+
+    const token = localStorage.getItem("token");
+    const payload = buildPayload("ONLINE");
+
+    const loaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+
+    if (!loaded) {
+      alert("Razorpay SDK failed to load");
+      return;
+    }
+
+    try {
+      const orderResponse = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: total,
+        }),
+      });
+
+      const orderData = await orderResponse.json();
+
+      if (!orderData.success) {
+        alert(orderData.message || "Order creation failed");
+        return;
+      }
+
+      const options = {
+        key: "rzp_test_SQD3b5534PanLJ",
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: "RR Mobile Solutions",
+        description: "Order Payment",
+        order_id: orderData.order.id,
+        handler: async function (response) {
+          try {
+            const verifyResponse = await fetch(
+              `${API_BASE_URL}/api/payment/verify-payment`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(response),
+              }
+            );
+
+            const verifyData = await verifyResponse.json();
+
+            if (!verifyData.success) {
+              alert(verifyData.message || "Payment verification failed");
+              return;
+            }
+
+            const orderSaveData = await placeFinalOrder(payload, token);
+
+            if (orderSaveData.success) {
+              alert("Payment successful and order placed");
+              localStorage.removeItem(cartKey);
+              window.location.href = "/home/orders";
+            } else {
+              alert(orderSaveData.message || "Payment succeeded but order save failed");
+            }
+          } catch (error) {
+            console.log("Verify/save order error:", error);
+            alert("Payment done but something went wrong while saving order");
+          }
+        },
+        prefill: {
+          name: address.fullName,
+          contact: address.phone,
+        },
+        theme: {
+          color: "#ef8521",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      console.log("Payment error:", error);
       alert("Something went wrong");
     }
   };
@@ -163,7 +286,7 @@ const Checkout = () => {
 
             <div className="flex justify-between">
               <span>Delivery</span>
-              <span>₹{deliveryCharge}</span>
+              <span className="text-green-600  font-bold  ">FREE</span>
             </div>
 
             <div className="border-t pt-3 flex justify-between font-bold text-lg">
@@ -172,11 +295,21 @@ const Checkout = () => {
             </div>
           </div>
 
+        
+
           <button
+            onClick={handlePayment}
+            className="w-full mt-3 bg-black hover:bg-gray-900 text-white py-3 rounded-xl font-semibold transition"
+          >
+            Pay Online
+          </button>
+
+          
+            <button
             onClick={handlePlaceOrder}
             className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition"
           >
-            Place Order
+            Pay on Delivery (+49)
           </button>
         </div>
       </div>

@@ -2,7 +2,7 @@ import "./App.css";
 import "./index.css";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
-
+import AdminOrders from "./AdminOrders";
 import "react-toastify/dist/ReactToastify.css";
 import Layout from "./components/ui/authcomponent/Auth";
 import Login from "./pages/auth/Login";
@@ -10,6 +10,9 @@ import Register from "./pages/auth/Register";
 import Adminview from "./components/ui/adminview/Adminview";
 import AddProduct from "./AddProduct";
 import Home from "./components/Home";
+import TrackOrder from "./TrackOrder";
+import ResetPassword from "./ResetPassword";
+import ForgotPassword from "./ForgotPassword";
 
 import Checkauth from "./components/commoncomponent/Checkauth";
 import { ToastContainer } from "react-toastify";
@@ -44,8 +47,13 @@ function App() {
             path="login"
             element={<Login setIsAuthenticated={setIsAuthenticated} />}
           />
+          
           <Route path="register" element={<Register />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+<Route path="/auth/reset-password/:token" element={<ResetPassword />} />
+
         </Route>
+        
 
         <Route
           path="/admin"
@@ -55,7 +63,9 @@ function App() {
             </Checkauth>
           }
         >
+         
           <Route path="add-product" element={<AddProduct />} />
+           <Route path="orders" element={<AdminOrders />} />
         </Route>
 
         <Route path="/home" element={<Home />}>
@@ -66,6 +76,7 @@ function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="orders" element={<Orders />} />
           <Route path="support" element={<Support />} />
+          <Route path="track-order/:id" element={<TrackOrder />} />
           
 
           <Route path="checkout" element={<Checkout />} />
@@ -94,3 +105,10 @@ function App() {
 }
 
 export default App;
+
+
+//rzp_live_SPzUOw5TbAeiQ4
+//secret:zO2wolIijbrLfDdz1eI3daNu
+
+
+//mz!m*a2bgqMszzX01XvMlDgm&BgDmizB

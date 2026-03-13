@@ -1,21 +1,28 @@
 import React, { useState } from "react";
 
 const AddProduct = () => {
-  const [product, setProduct] = useState({
+  const [productData, setProductData] = useState({
     name: "",
     price: "",
     description: "",
     category: "",
     image: null,
+    quantity: "",
   });
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
     if (name === "image") {
-      setProduct({ ...product, image: files[0] });
+      setProductData((prev) => ({
+        ...prev,
+        image: files[0],
+      }));
     } else {
-      setProduct({ ...product, [name]: value });
+      setProductData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
 
@@ -24,17 +31,27 @@ const AddProduct = () => {
 
     const token = localStorage.getItem("token");
 
+    if (
+      !productData.name ||
+      !productData.price ||
+      !productData.description ||
+      !productData.category ||
+      productData.quantity === "" ||
+      !productData.image
+    ) {
+      return alert("Please fill all fields");
+    }
+
     const formData = new FormData();
-    formData.append("name", product.name);
-    formData.append("price", product.price);
-    formData.append("description", product.description);
-    formData.append("category", product.category);
-    formData.append("image", product.image);
-   
-    
-//fetch("https://rr-mobiles-backend.onrender.com/api/auth/login"
+    formData.append("name", productData.name);
+    formData.append("price", productData.price);
+    formData.append("description", productData.description);
+    formData.append("category", productData.category);
+    formData.append("quantity", productData.quantity);
+    formData.append("image", productData.image);
+
     try {
-      const res = await fetch("https://rr-mobiles-backend.onrender.com/api/products/add", {
+      const res = await fetch("http://localhost:8000/api/products/add", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -46,12 +63,13 @@ const AddProduct = () => {
 
       if (data.success) {
         alert("Product added successfully");
-        setProduct({
+        setProductData({
           name: "",
           price: "",
           description: "",
           category: "",
           image: null,
+          quantity: "",
         });
       } else {
         alert(data.message);
@@ -71,7 +89,7 @@ const AddProduct = () => {
           type="text"
           name="name"
           placeholder="Product Name"
-          value={product.name}
+          value={productData.name}
           onChange={handleChange}
           className="w-full border p-3 rounded-lg"
         />
@@ -80,7 +98,7 @@ const AddProduct = () => {
           type="number"
           name="price"
           placeholder="Price"
-          value={product.price}
+          value={productData.price}
           onChange={handleChange}
           className="w-full border p-3 rounded-lg"
         />
@@ -88,14 +106,24 @@ const AddProduct = () => {
         <textarea
           name="description"
           placeholder="Description"
-          value={product.description}
+          value={productData.description}
           onChange={handleChange}
+          className="w-full border p-3 rounded-lg"
+        />
+
+        <input
+          type="number"
+          name="quantity"
+          placeholder="Quantity"
+          value={productData.quantity}
+          onChange={handleChange}
+          min="0"
           className="w-full border p-3 rounded-lg"
         />
 
         <select
           name="category"
-          value={product.category}
+          value={productData.category}
           onChange={handleChange}
           className="w-full border p-3 rounded-lg"
         >
@@ -109,8 +137,9 @@ const AddProduct = () => {
           <option value="Headphones">Headphones</option>
           <option value="Chargers">Chargers</option>
           <option value="Screen Guard">Screen Guard</option>
-           <option value="Mobile Case">Mobile Case</option>
-             <option value="Laptop Skins">Laptop Skins</option>
+          <option value="Mobile Case">Mobile Case</option>
+          <option value="Laptop Skins">Laptop Skins</option>
+          <option value="Mobile Skins">Mobile Skins</option>
         </select>
 
         <input
@@ -123,7 +152,7 @@ const AddProduct = () => {
 
         <button
           type="submit"
-          className="w-full bg-black text-white py-3 rounded-lg"
+          className="w-full bg-black text-white py-3 rounded-lg hover:bg-orange-500 transition"
         >
           Add Product
         </button>

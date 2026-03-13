@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiPlus, FiMinus, FiTrash2, FiShoppingBag } from "react-icons/fi";
+import { toast } from "react-toastify";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -11,14 +12,53 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [recommended, setRecommended] = useState([]);
 
+  const updateCart = (updatedCart) => {
+    setCartItems(updatedCart);
+    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
+  };
+
   const fetchProducts = async () => {
     try {
-      const res = await fetch("https://rr-mobiles-backend.onrender.com/api/products/get");
+      const res = await fetch("http://localhost:8000/api/products/get");
       const data = await res.json();
 
       if (data.success) {
-        const shuffled = [...data.products].sort(() => 0.5 - Math.random());
+        const allProducts = data.products || [];
+
+        // Remove out-of-stock items from recommended
+        const inStockProducts = allProducts.filter(
+          (product) => Number(product.quantity) > 0
+        );
+
+        const shuffled = [...inStockProducts].sort(() => 0.5 - Math.random());
         setRecommended(shuffled.slice(0, 4));
+
+        // Sync cart with latest products from backend
+        const savedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
+
+        const syncedCart = savedCart
+          .map((cartItem) => {
+            const matchedProduct = allProducts.find(
+              (product) => product._id === cartItem._id
+            );
+
+            if (!matchedProduct) return null;
+
+            if (Number(matchedProduct.quantity) <= 0) return null;
+
+            return {
+              ...cartItem,
+              price: matchedProduct.price,
+              name: matchedProduct.name,
+              image: matchedProduct.image,
+              category: matchedProduct.category,
+              availableStock: matchedProduct.quantity,
+              quantity: Math.min(cartItem.quantity, matchedProduct.quantity),
+            };
+          })
+          .filter(Boolean);
+
+        updateCart(syncedCart);
       }
     } catch (error) {
       console.log("Recommended products error:", error);
@@ -26,20 +66,25 @@ const Cart = () => {
   };
 
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
-    setCartItems(savedCart);
     fetchProducts();
   }, [cartKey]);
 
-  const updateCart = (updatedCart) => {
-    setCartItems(updatedCart);
-    localStorage.setItem(cartKey, JSON.stringify(updatedCart));
-  };
-
   const increaseQty = (id) => {
-    const updatedCart = cartItems.map((item) =>
-      item._id === id ? { ...item, quantity: item.quantity + 1 } : item
-    );
+    const updatedCart = cartItems.map((item) => {
+      const stock = Number(item.availableStock ?? item.quantity);
+
+      if (item._id === id) {
+        if (item.quantity >= stock) {
+          toast.error("No more stock available");
+          return item;
+        }
+
+        return { ...item, quantity: item.quantity + 1 };
+      }
+
+      return item;
+    });
+
     updateCart(updatedCart);
   };
 
@@ -65,27 +110,44 @@ const Cart = () => {
     );
   }, [cartItems]);
 
-  const deliveryCharge = cartItems.length > 0 ? 49 : 0;
-  const total = subtotal + deliveryCharge;
+  const total = subtotal;
 
   const addRecommendedToCart = (product) => {
+    if (Number(product.quantity) <= 0) {
+      return toast.error("This product is out of stock");
+    }
+
     const existingCart = JSON.parse(localStorage.getItem(cartKey)) || [];
     const foundItem = existingCart.find((item) => item._id === product._id);
 
     let updatedCart;
 
     if (foundItem) {
+      if (foundItem.quantity >= Number(product.quantity)) {
+        return toast.error("No more stock available");
+      }
+
       updatedCart = existingCart.map((item) =>
         item._id === product._id
           ? { ...item, quantity: item.quantity + 1 }
           : item
       );
     } else {
-      updatedCart = [...existingCart, { ...product, quantity: 1 }];
+      updatedCart = [
+        ...existingCart,
+        {
+          ...product,
+          quantity: 1,
+          availableStock: product.quantity,
+        },
+      ];
     }
 
     updateCart(updatedCart);
+
+    toast.success("Product added to cart");
   };
+
   const handleCheckout = () => {
     const token = localStorage.getItem("token");
 
@@ -94,12 +156,16 @@ const Cart = () => {
       return;
     }
 
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
     navigate("/home/checkout");
   };
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] pb-10 relative overflow-hidden">
-      {/* background glow */}
       <div className="absolute top-0 left-0 w-72 h-72 bg-orange-500/10 blur-3xl rounded-full" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-red-500/10 blur-3xl rounded-full" />
 
@@ -123,7 +189,7 @@ const Cart = () => {
             <h2 className="text-2xl font-bold text-white mb-2">
               Your cart is empty
             </h2>
-            <p className="text-gray-400">Add some products to continue.</p>
+            <p className="text-gray-400">Add some in-stock products to continue.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -154,12 +220,15 @@ const Cart = () => {
                       ₹{item.price}
                     </p>
 
+                    <p className="text-xs text-green-400 mt-1">
+                      Available stock: {item.availableStock ?? item.quantity}
+                    </p>
+
                     <div className="flex items-center gap-3 mt-4">
                       <button
                         onClick={() => decreaseQty(item._id)}
                         className="w-10 h-10 rounded-xl bg-black text-white border border-white/10 flex items-center justify-center hover:bg-orange-500 transition shadow-sm"
                       >
-                        -
                         <FiMinus size={16} />
                       </button>
 
@@ -171,7 +240,6 @@ const Cart = () => {
                         onClick={() => increaseQty(item._id)}
                         className="w-10 h-10 rounded-xl bg-black text-white border border-white/10 flex items-center justify-center hover:bg-orange-500 transition shadow-sm"
                       >
-                        +
                         <FiPlus size={16} />
                       </button>
                     </div>
@@ -207,7 +275,7 @@ const Cart = () => {
 
                 <div className="flex justify-between">
                   <span className="text-gray-400">Delivery</span>
-                  <span className="font-medium text-white">₹{deliveryCharge}</span>
+                  <span className="font-bold text-green-400">FREE</span>
                 </div>
 
                 <div className="border-t border-white/10 pt-3 flex justify-between text-lg font-bold">
@@ -237,41 +305,51 @@ const Cart = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {recommended.map((item) => (
-              <div
-                key={item._id}
-                className="bg-white/5 backdrop-blur-md rounded-2xl shadow-sm border border-white/10 overflow-hidden hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition"
-              >
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-full h-36 sm:h-44 object-cover"
-                />
+            {recommended.length > 0 ? (
+              recommended.map((item) => (
+                <div
+                  key={item._id}
+                  className="bg-white/5 backdrop-blur-md rounded-2xl shadow-sm border border-white/10 overflow-hidden hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-full h-36 sm:h-44 object-cover"
+                  />
 
-                <div className="p-3">
-                  <h3 className="font-semibold text-white line-clamp-1">
-                    {item.name}
-                  </h3>
+                  <div className="p-3">
+                    <h3 className="font-semibold text-white line-clamp-1">
+                      {item.name}
+                    </h3>
 
-                  {item.category && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {item.category}
+                    {item.category && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {item.category}
+                      </p>
+                    )}
+
+                    <p className="text-orange-400 font-bold mt-1">
+                      ₹{item.price}
                     </p>
-                  )}
 
-                  <p className="text-orange-400 font-bold mt-1">
-                    ₹{item.price}
-                  </p>
+                    <p className="text-xs text-green-400 mt-1">
+                      In Stock: {item.quantity}
+                    </p>
 
-                  <button
-                    onClick={() => addRecommendedToCart(item)}
-                    className="w-full mt-3 bg-black text-white py-2 rounded-lg text-sm hover:bg-orange-500 transition"
-                  >
-                    Add to Cart
-                  </button>
+                    <button
+                      onClick={() => addRecommendedToCart(item)}
+                      className="w-full mt-3 bg-black text-white py-2 rounded-lg text-sm hover:bg-orange-500 transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-2 md:col-span-3 lg:col-span-4 text-center py-8 text-gray-400">
+                No in-stock recommendations available right now.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
