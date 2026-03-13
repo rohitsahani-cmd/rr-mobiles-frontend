@@ -15,6 +15,8 @@ const Checkout = () => {
     state: "",
     street: "",
   });
+  const [isPaying, setIsPaying] = useState(false);
+  const [isCodLoading, setIsCodLoading] = useState(false);
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
@@ -29,10 +31,13 @@ const Checkout = () => {
   }, [cartItems]);
 
   const deliveryCharge = cartItems.length > 0 ? 49 : 0;
-  const total = subtotal ;
+  const total = subtotal;
 
   const handleChange = (e) => {
-    setAddress({ ...address, [e.target.name]: e.target.value });
+    setAddress((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const validateAddress = () => {
@@ -61,7 +66,7 @@ const Checkout = () => {
     return true;
   };
 
-  const buildPayload = (paymentMethod) => ({
+  const buildPayload = (paymentMethod, paymentStatus = "Pending", razorpayData = {}) => ({
     items: cartItems.map((item) => ({
       productId: item._id,
       name: item.name,
@@ -75,6 +80,9 @@ const Checkout = () => {
     deliveryCharge,
     total,
     paymentMethod,
+    paymentStatus,
+    razorpayOrderId: razorpayData.razorpayOrderId || "",
+    razorpayPaymentId: razorpayData.razorpayPaymentId || "",
   });
 
   const placeFinalOrder = async (payload, token) => {
@@ -94,9 +102,16 @@ const Checkout = () => {
     if (!validateAddress()) return;
 
     const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+
     const payload = buildPayload("COD");
 
     try {
+      setIsCodLoading(true);
+
       const data = await placeFinalOrder(payload, token);
 
       if (data.success) {
@@ -109,11 +124,19 @@ const Checkout = () => {
     } catch (error) {
       console.log("Place order error:", error);
       alert("Something went wrong");
+    } finally {
+      setIsCodLoading(false);
     }
   };
 
   const loadScript = (src) => {
     return new Promise((resolve) => {
+      const existingScript = document.querySelector(`script[src="${src}"]`);
+      if (existingScript) {
+        resolve(true);
+        return;
+      }
+
       const script = document.createElement("script");
       script.src = src;
       script.onload = () => resolve(true);
@@ -126,7 +149,10 @@ const Checkout = () => {
     if (!validateAddress()) return;
 
     const token = localStorage.getItem("token");
-    const payload = buildPayload("ONLINE");
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
 
     const loaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
 
@@ -136,10 +162,13 @@ const Checkout = () => {
     }
 
     try {
+      setIsPaying(true);
+
       const orderResponse = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           amount: total,
@@ -154,7 +183,7 @@ const Checkout = () => {
       }
 
       const options = {
-        key: "rzp_test_SQD3b5534PanLJ",
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: orderData.order.amount,
         currency: orderData.order.currency,
         name: "RR Mobile Solutions",
@@ -181,6 +210,11 @@ const Checkout = () => {
               return;
             }
 
+            const payload = buildPayload("ONLINE", "Paid", {
+              razorpayOrderId: orderData.order.id,
+              razorpayPaymentId: response.razorpay_payment_id,
+            });
+
             const orderSaveData = await placeFinalOrder(payload, token);
 
             if (orderSaveData.success) {
@@ -202,6 +236,11 @@ const Checkout = () => {
         theme: {
           color: "#ef8521",
         },
+        modal: {
+          ondismiss: function () {
+            setIsPaying(false);
+          },
+        },
       };
 
       const paymentObject = new window.Razorpay(options);
@@ -209,6 +248,8 @@ const Checkout = () => {
     } catch (error) {
       console.log("Payment error:", error);
       alert("Something went wrong");
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -286,7 +327,7 @@ const Checkout = () => {
 
             <div className="flex justify-between">
               <span>Delivery</span>
-              <span className="text-green-600  font-bold  ">FREE</span>
+              <span className="text-green-600 font-bold">FREE</span>
             </div>
 
             <div className="border-t pt-3 flex justify-between font-bold text-lg">
@@ -295,21 +336,28 @@ const Checkout = () => {
             </div>
           </div>
 
-        
-
           <button
             onClick={handlePayment}
-            className="w-full mt-3 bg-black hover:bg-gray-900 text-white py-3 rounded-xl font-semibold transition"
+            disabled={isPaying}
+            className={`w-full mt-3 py-3 rounded-xl font-semibold transition ${
+              isPaying
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-black hover:bg-gray-900 text-white"
+            }`}
           >
-            Pay Online
+            {isPaying ? "Processing..." : "Pay Online"}
           </button>
 
-          
-            <button
+          <button
             onClick={handlePlaceOrder}
-            className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition"
+            disabled={isCodLoading}
+            className={`w-full mt-6 py-3 rounded-xl font-semibold transition ${
+              isCodLoading
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-orange-500 hover:bg-orange-600 text-white"
+            }`}
           >
-            Pay on Delivery (+49)
+            {isCodLoading ? "Placing Order..." : "Pay on Delivery (+49)"}
           </button>
         </div>
       </div>
