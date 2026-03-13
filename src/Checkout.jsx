@@ -181,68 +181,75 @@ const Checkout = () => {
         alert(orderData.message || "Order creation failed");
         return;
       }
+const options = {
+  key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+  amount: orderData.order.amount,
+  currency: orderData.order.currency,
+  name: "RR Mobile Solutions",
+  description: "Order Payment",
+  order_id: orderData.order.id,
 
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: orderData.order.amount,
-        currency: orderData.order.currency,
-        name: "RR Mobile Solutions",
-        description: "Order Payment",
-        order_id: orderData.order.id,
-        handler: async function (response) {
-          try {
-            const verifyResponse = await fetch(
-              `${API_BASE_URL}/api/payment/verify-payment`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(response),
-              }
-            );
-
-            const verifyData = await verifyResponse.json();
-
-            if (!verifyData.success) {
-              alert(verifyData.message || "Payment verification failed");
-              return;
-            }
-
-            const payload = buildPayload("ONLINE", "Paid", {
-              razorpayOrderId: orderData.order.id,
-              razorpayPaymentId: response.razorpay_payment_id,
-            });
-
-            const orderSaveData = await placeFinalOrder(payload, token);
-
-            if (orderSaveData.success) {
-              alert("Payment successful and order placed");
-              localStorage.removeItem(cartKey);
-              window.location.href = "/home/orders";
-            } else {
-              alert(orderSaveData.message || "Payment succeeded but order save failed");
-            }
-          } catch (error) {
-            console.log("Verify/save order error:", error);
-            alert("Payment done but something went wrong while saving order");
-          }
-        },
-        prefill: {
-          name: address.fullName,
-          contact: address.phone,
-        },
-        theme: {
-          color: "#ef8521",
-        },
-        modal: {
-          ondismiss: function () {
-            setIsPaying(false);
+  handler: async function (response) {
+    try {
+      const verifyResponse = await fetch(
+        `${API_BASE_URL}/api/payment/verify-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        },
-      };
+          body: JSON.stringify(response),
+        }
+      );
 
+      const verifyData = await verifyResponse.json();
+
+      if (!verifyData.success) {
+        alert(verifyData.message || "Payment verification failed");
+        return;
+      }
+
+      const payload = buildPayload("ONLINE", "Paid", {
+        razorpayOrderId: orderData.order.id,
+        razorpayPaymentId: response.razorpay_payment_id,
+      });
+
+      const orderSaveData = await placeFinalOrder(payload, token);
+
+      if (orderSaveData.success) {
+        alert("Payment successful and order placed");
+        localStorage.removeItem(cartKey);
+        window.location.href = "/home/orders";
+      } else {
+        alert(orderSaveData.message || "Payment succeeded but order save failed");
+      }
+    } catch (error) {
+      console.log("Verify/save order error:", error);
+      alert("Payment done but something went wrong while saving order");
+    }
+  },
+
+  prefill: {
+    name: address.fullName,
+    contact: address.phone,
+    email: user?.email || "test@example.com",
+  },
+
+  notes: {
+    address: `${address.street}, ${address.city}, ${address.state}, ${address.pincode}`,
+  },
+
+  theme: {
+    color: "#ef8521",
+  },
+
+  modal: {
+    ondismiss: function () {
+      setIsPaying(false);
+    },
+  },
+};
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
     } catch (error) {
