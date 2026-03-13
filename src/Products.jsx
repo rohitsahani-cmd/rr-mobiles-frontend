@@ -99,7 +99,7 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/products/get");
+      const res = await fetch("https://rr-mobiles-backend-1.onrender.com/api/products/get");
       const data = await res.json();
 
       if (data.success) {
@@ -114,7 +114,7 @@ const Products = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`http://localhost:8000/api/products/delete/${id}`, {
+      const res = await fetch(`https://rr-mobiles-backend-1.onrender.com/api/products/delete/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

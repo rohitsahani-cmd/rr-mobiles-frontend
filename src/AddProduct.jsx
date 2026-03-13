@@ -51,7 +51,7 @@ const AddProduct = () => {
     formData.append("image", productData.image);
 
     try {
-      const res = await fetch("http://localhost:8000/api/products/add", {
+      const res = await fetch("https://rr-mobiles-backend-1.onrender.com/api/products/add", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

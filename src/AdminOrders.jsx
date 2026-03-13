@@ -11,7 +11,7 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/orders/admin/all", {
+      const res = await fetch("https://rr-mobiles-backend-1.onrender.com/api/orders/admin/all", {
         headers: {
           Authorization: `Bearer ${getToken()}`,
         },
@@ -49,7 +49,7 @@ const AdminOrders = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/api/orders/admin/ship/${orderId}`,
+        `https://rr-mobiles-backend-1.onrender.com/api/orders/admin/ship/${orderId}`,
         {
           method: "POST",
           headers: {
@@ -81,7 +81,7 @@ const AdminOrders = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/api/orders/admin/update/${orderId}`,
+        `https://rr-mobiles-backend-1.onrender.com/api/orders/admin/update/${orderId}`,
         {
           method: "PUT",
           headers: {
@@ -133,7 +133,7 @@ const AdminOrders = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/api/orders/admin/delete/${orderId}`,
+        `https://rr-mobiles-backend-1.onrender.com/api/orders/admin/delete/${orderId}`,
         {
           method: "DELETE",
           headers: {

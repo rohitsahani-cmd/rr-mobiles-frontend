@@ -31,7 +31,7 @@ const Login = ({ setIsAuthenticated }) => {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/auth/login", {
+      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,7 +66,7 @@ const Login = ({ setIsAuthenticated }) => {
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
-      const response = await fetch("http://localhost:8000/auth/google-login", {
+      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/google-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

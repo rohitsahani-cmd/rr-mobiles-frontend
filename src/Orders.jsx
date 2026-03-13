@@ -28,7 +28,7 @@ const Orders = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:8000/api/orders/my-orders", {
+      const res = await fetch("https://rr-mobiles-backend-1.onrender.com/api/orders/my-orders", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -54,7 +54,7 @@ const Orders = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/api/orders/track/${orderId}`,
+        `https://rr-mobiles-backend-1.onrender.com/api/orders/track/${orderId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

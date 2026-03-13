@@ -16,7 +16,7 @@ const ResetPassword = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/auth/reset-password/${token}`,
+        `https://rr-mobiles-backend-1.onrender.com/auth/reset-password/${token}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

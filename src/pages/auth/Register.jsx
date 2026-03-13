@@ -41,7 +41,7 @@ const Register = ({ setIsAuthenticated }) => {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:8000/auth/signup", {
+      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,7 +77,7 @@ const Register = ({ setIsAuthenticated }) => {
       setOtpLoading(true);
 
       const response = await fetch(
-        "http://localhost:8000/auth/verify-signup-otp",
+        "https://rr-mobiles-backend-1.onrender.com/auth/verify-signup-otp",
         {
           method: "POST",
           headers: {
@@ -127,7 +127,7 @@ const Register = ({ setIsAuthenticated }) => {
       setResendLoading(true);
 
       const response = await fetch(
-        "http://localhost:8000/auth/resend-signup-otp",
+        "https://rr-mobiles-backend-1.onrender.com/auth/resend-signup-otp",
         {
           method: "POST",
           headers: {
@@ -157,7 +157,7 @@ const Register = ({ setIsAuthenticated }) => {
 
   const handleGoogleSignupSuccess = async (credentialResponse) => {
     try {
-      const response = await fetch("http://localhost:8000/auth/google-login", {
+      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/google-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

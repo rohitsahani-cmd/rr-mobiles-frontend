@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://rr-mobiles-backend-1.onrender.com";
 
 const Checkout = () => {
   const user = JSON.parse(localStorage.getItem("loggedInUser"));

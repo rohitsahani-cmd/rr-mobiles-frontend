@@ -14,7 +14,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/auth/forgot-password", {
+      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
