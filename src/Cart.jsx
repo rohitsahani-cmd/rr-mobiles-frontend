@@ -175,9 +175,9 @@ const Cart = () => {
             <FiShoppingBag size={20} />
           </div>
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
               My Cart
-            </h1>
+            </h2>
             <p className="text-gray-400 text-sm">
               Review your selected items before checkout
             </p>
@@ -229,6 +229,7 @@ const Cart = () => {
                         onClick={() => decreaseQty(item._id)}
                         className="w-10 h-10 rounded-xl bg-black text-white border border-white/10 flex items-center justify-center hover:bg-orange-500 transition shadow-sm"
                       >
+                        -
                         <FiMinus size={16} />
                       </button>
 
@@ -240,6 +241,7 @@ const Cart = () => {
                         onClick={() => increaseQty(item._id)}
                         className="w-10 h-10 rounded-xl bg-black text-white border border-white/10 flex items-center justify-center hover:bg-orange-500 transition shadow-sm"
                       >
+                        +
                         <FiPlus size={16} />
                       </button>
                     </div>

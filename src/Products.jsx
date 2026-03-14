@@ -99,7 +99,9 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("https://rr-mobiles-backend-1.onrender.com/api/products/get");
+      const res = await fetch(
+        "https://rr-mobiles-backend-1.onrender.com/api/products/get"
+      );
       const data = await res.json();
 
       if (data.success) {
@@ -114,12 +116,15 @@ const Products = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`https://rr-mobiles-backend-1.onrender.com/api/products/delete/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `https://rr-mobiles-backend-1.onrender.com/api/products/delete/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const data = await res.json();
 
@@ -172,9 +177,13 @@ const Products = () => {
     });
 
     if (sortBy === "price-low") {
-      filtered = [...filtered].sort((a, b) => Number(a.price) - Number(b.price));
+      filtered = [...filtered].sort(
+        (a, b) => Number(a.price) - Number(b.price)
+      );
     } else if (sortBy === "price-high") {
-      filtered = [...filtered].sort((a, b) => Number(b.price) - Number(a.price));
+      filtered = [...filtered].sort(
+        (a, b) => Number(b.price) - Number(a.price)
+      );
     } else if (sortBy === "name") {
       filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
     } else {
@@ -193,7 +202,8 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-[#090909] text-white">
-      <section className="relative overflow-hidden h-[78vh] min-h-[540px]">
+      {/* HERO */}
+      <section className="relative overflow-hidden min-h-[620px] sm:min-h-[700px] lg:min-h-[760px]">
         <div
           className="absolute inset-0 flex transition-transform duration-1000 ease-in-out"
           style={{
@@ -202,7 +212,11 @@ const Products = () => {
         >
           {heroImages.map((img, index) => (
             <div key={index} className="min-w-full h-full relative">
-              <img src={img} alt="hero" className="w-full h-full object-cover" />
+              <img
+                src={img}
+                alt="hero"
+                className="w-full h-full object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/40" />
             </div>
           ))}
@@ -211,7 +225,7 @@ const Products = () => {
         <div className="absolute top-10 right-10 w-52 h-52 bg-orange-500/15 blur-3xl rounded-full" />
         <div className="absolute bottom-10 left-10 w-56 h-56 bg-red-500/10 blur-3xl rounded-full" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20 h-full flex items-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 lg:pt-24 pb-24 sm:pb-28 lg:pb-32 min-h-[620px] sm:min-h-[700px] lg:min-h-[760px] flex items-center">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 px-4 py-2 text-sm text-orange-300 mb-5">
               <FaFire />
@@ -227,13 +241,13 @@ const Products = () => {
 
             <p className="mt-5 text-sm sm:text-base md:text-lg text-gray-300 max-w-2xl">
               Discover mobiles, accessories, smart devices, and top picks from
-              RR Mobile Solutions with a premium shopping experience, fast checkout,
-              and curated collections.
+              RR Mobile Solutions with a premium shopping experience, fast
+              checkout, and curated collections.
             </p>
 
             <div className="mt-8">
               <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 shadow-lg shadow-black/20">
-                <FiSearch className="text-orange-400 text-xl" />
+                <FiSearch className="text-orange-400 text-xl shrink-0" />
                 <input
                   type="text"
                   placeholder="Search products, gadgets, accessories..."
@@ -258,7 +272,7 @@ const Products = () => {
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+        <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
           {heroImages.map((_, index) => (
             <div
               key={index}
@@ -271,16 +285,19 @@ const Products = () => {
         </div>
       </section>
 
-      <section className="sticky top-[70px] z-20 backdrop-blur-xl bg-[#090909]/80 border-y border-white/10">
+      {/* FILTER BAR */}
+      <section className="sticky top-0 z-30 backdrop-blur-xl bg-[#090909]/90 border-y border-white/10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <div className="flex items-center gap-2 text-gray-300">
               <FiSliders className="text-orange-400" />
-              <span className="text-sm font-medium">Refine your collection</span>
+              <span className="text-sm font-medium">
+                Refine your collection
+              </span>
             </div>
 
             <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex gap-3 overflow-x-auto pb-1">
+              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
                 {categories.map((cat) => (
                   <button
                     key={cat}
@@ -299,18 +316,27 @@ const Products = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white/5 text-gray-200 border border-white/10 rounded-xl px-4 py-2 outline-none"
+                className="bg-white/5 text-gray-200 border border-white/10 rounded-xl px-4 py-2 outline-none min-w-[180px]"
               >
-                <option value="newest" className="text-black">Newest</option>
-                <option value="price-low" className="text-black">Price: Low to High</option>
-                <option value="price-high" className="text-black">Price: High to Low</option>
-                <option value="name" className="text-black">Name: A to Z</option>
+                <option value="newest" className="text-black">
+                  Newest
+                </option>
+                <option value="price-low" className="text-black">
+                  Price: Low to High
+                </option>
+                <option value="price-high" className="text-black">
+                  Price: High to Low
+                </option>
+                <option value="name" className="text-black">
+                  Name: A to Z
+                </option>
               </select>
             </div>
           </div>
         </div>
       </section>
 
+      {/* PRODUCTS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8 gap-3">
           <div>
@@ -325,10 +351,16 @@ const Products = () => {
 
           <div className="flex gap-3 flex-wrap">
             <div className="rounded-2xl bg-white/5 border border-white/10 px-4 py-2 text-sm text-gray-300">
-              <span className="text-orange-400 font-semibold">{products.length}</span> total items
+              <span className="text-orange-400 font-semibold">
+                {products.length}
+              </span>{" "}
+              total items
             </div>
             <div className="rounded-2xl bg-white/5 border border-white/10 px-4 py-2 text-sm text-gray-300">
-              <span className="text-orange-400 font-semibold">{favourites.length}</span> favourites
+              <span className="text-orange-400 font-semibold">
+                {favourites.length}
+              </span>{" "}
+              favourites
             </div>
           </div>
         </div>

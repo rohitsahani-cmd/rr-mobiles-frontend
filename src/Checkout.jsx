@@ -17,6 +17,7 @@ const Checkout = () => {
   });
   const [isPaying, setIsPaying] = useState(false);
   const [isCodLoading, setIsCodLoading] = useState(false);
+  const [orderStatus, setOrderStatus] = useState("idle"); // idle | loading | success
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
@@ -66,7 +67,11 @@ const Checkout = () => {
     return true;
   };
 
-  const buildPayload = (paymentMethod, paymentStatus = "Pending", razorpayData = {}) => ({
+  const buildPayload = (
+    paymentMethod,
+    paymentStatus = "Pending",
+    razorpayData = {}
+  ) => ({
     items: cartItems.map((item) => ({
       productId: item._id,
       name: item.name,
@@ -98,6 +103,19 @@ const Checkout = () => {
     return await res.json();
   };
 
+  const showSuccessAndRedirect = () => {
+    setOrderStatus("loading");
+
+    setTimeout(() => {
+      setOrderStatus("success");
+      localStorage.removeItem(cartKey);
+
+      setTimeout(() => {
+        window.location.href = "/home/orders";
+      }, 2000);
+    }, 1500);
+  };
+
   const handlePlaceOrder = async () => {
     if (!validateAddress()) return;
 
@@ -115,9 +133,7 @@ const Checkout = () => {
       const data = await placeFinalOrder(payload, token);
 
       if (data.success) {
-        alert("Order placed successfully");
-        localStorage.removeItem(cartKey);
-        window.location.href = "/home/orders";
+        showSuccessAndRedirect();
       } else {
         alert(data.message || "Failed to place order");
       }
@@ -154,7 +170,9 @@ const Checkout = () => {
       return;
     }
 
-    const loaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+    const loaded = await loadScript(
+      "https://checkout.razorpay.com/v1/checkout.js"
+    );
 
     if (!loaded) {
       alert("Razorpay SDK failed to load");
@@ -164,16 +182,19 @@ const Checkout = () => {
     try {
       setIsPaying(true);
 
-      const orderResponse = await fetch(`${API_BASE_URL}/api/payment/create-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          amount: total,
-        }),
-      });
+      const orderResponse = await fetch(
+        `${API_BASE_URL}/api/payment/create-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            amount: total,
+          }),
+        }
+      );
 
       const orderData = await orderResponse.json();
 
@@ -181,75 +202,77 @@ const Checkout = () => {
         alert(orderData.message || "Order creation failed");
         return;
       }
-const options = {
-  key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-  amount: orderData.order.amount,
-  currency: orderData.order.currency,
-  name: "RR Mobile Solutions",
-  description: "Order Payment",
-  order_id: orderData.order.id,
 
-  handler: async function (response) {
-    try {
-      const verifyResponse = await fetch(
-        `${API_BASE_URL}/api/payment/verify-payment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: "RR Mobile Solutions",
+        description: "Order Payment",
+        order_id: orderData.order.id,
+
+        handler: async function (response) {
+          try {
+            const verifyResponse = await fetch(
+              `${API_BASE_URL}/api/payment/verify-payment`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(response),
+              }
+            );
+
+            const verifyData = await verifyResponse.json();
+
+            if (!verifyData.success) {
+              alert(verifyData.message || "Payment verification failed");
+              return;
+            }
+
+            const payload = buildPayload("ONLINE", "Paid", {
+              razorpayOrderId: orderData.order.id,
+              razorpayPaymentId: response.razorpay_payment_id,
+            });
+
+            const orderSaveData = await placeFinalOrder(payload, token);
+
+            if (orderSaveData.success) {
+              showSuccessAndRedirect();
+            } else {
+              alert(
+                orderSaveData.message || "Payment succeeded but order save failed"
+              );
+            }
+          } catch (error) {
+            console.log("Verify/save order error:", error);
+            alert("Payment done but something went wrong while saving order");
+          }
+        },
+
+        prefill: {
+          name: address.fullName,
+          contact: address.phone,
+          email: user?.email || "test@example.com",
+        },
+
+        notes: {
+          address: `${address.street}, ${address.city}, ${address.state}, ${address.pincode}`,
+        },
+
+        theme: {
+          color: "#ef8521",
+        },
+
+        modal: {
+          ondismiss: function () {
+            setIsPaying(false);
           },
-          body: JSON.stringify(response),
-        }
-      );
+        },
+      };
 
-      const verifyData = await verifyResponse.json();
-
-      if (!verifyData.success) {
-        alert(verifyData.message || "Payment verification failed");
-        return;
-      }
-
-      const payload = buildPayload("ONLINE", "Paid", {
-        razorpayOrderId: orderData.order.id,
-        razorpayPaymentId: response.razorpay_payment_id,
-      });
-
-      const orderSaveData = await placeFinalOrder(payload, token);
-
-      if (orderSaveData.success) {
-        alert("Payment successful and order placed");
-        localStorage.removeItem(cartKey);
-        window.location.href = "/home/orders";
-      } else {
-        alert(orderSaveData.message || "Payment succeeded but order save failed");
-      }
-    } catch (error) {
-      console.log("Verify/save order error:", error);
-      alert("Payment done but something went wrong while saving order");
-    }
-  },
-
-  prefill: {
-    name: address.fullName,
-    contact: address.phone,
-    email: user?.email || "test@example.com",
-  },
-
-  notes: {
-    address: `${address.street}, ${address.city}, ${address.state}, ${address.pincode}`,
-  },
-
-  theme: {
-    color: "#ef8521",
-  },
-
-  modal: {
-    ondismiss: function () {
-      setIsPaying(false);
-    },
-  },
-};
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
     } catch (error) {
@@ -259,6 +282,51 @@ const options = {
       setIsPaying(false);
     }
   };
+
+  if (orderStatus === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-semibold text-gray-700">
+            Placing your order...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (orderStatus === "success") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center animate-bounce">
+            <svg
+              className="w-10 h-10 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800">
+            Order Placed Successfully!
+          </h2>
+
+          <p className="text-gray-500 text-sm">
+            Redirecting to your orders...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 pb-10">
