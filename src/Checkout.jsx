@@ -15,9 +15,13 @@ const Checkout = () => {
     state: "",
     street: "",
   });
+
   const [isPaying, setIsPaying] = useState(false);
   const [isCodLoading, setIsCodLoading] = useState(false);
-  const [orderStatus, setOrderStatus] = useState("idle"); // idle | loading | success
+
+  // idle | loading | success | failed
+  const [orderStatus, setOrderStatus] = useState("idle");
+  const [failureMessage, setFailureMessage] = useState("");
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
@@ -31,8 +35,13 @@ const Checkout = () => {
     );
   }, [cartItems]);
 
-  const deliveryCharge = cartItems.length > 0 ? 49 : 0;
-  const total = subtotal;
+  // Online payment = free delivery
+  // COD = extra 49
+  const onlineDeliveryCharge = 0;
+  const codDeliveryCharge = cartItems.length > 0 ? 49 : 0;
+
+  const onlineTotal = subtotal + onlineDeliveryCharge;
+  const codTotal = subtotal + codDeliveryCharge;
 
   const handleChange = (e) => {
     setAddress((prev) => ({
@@ -70,7 +79,9 @@ const Checkout = () => {
   const buildPayload = (
     paymentMethod,
     paymentStatus = "Pending",
-    razorpayData = {}
+    razorpayData = {},
+    customDeliveryCharge = 0,
+    customTotal = subtotal
   ) => ({
     items: cartItems.map((item) => ({
       productId: item._id,
@@ -82,8 +93,8 @@ const Checkout = () => {
     })),
     address,
     subtotal,
-    deliveryCharge,
-    total,
+    deliveryCharge: customDeliveryCharge,
+    total: customTotal,
     paymentMethod,
     paymentStatus,
     razorpayOrderId: razorpayData.razorpayOrderId || "",
@@ -116,6 +127,11 @@ const Checkout = () => {
     }, 1500);
   };
 
+  const showFailure = (message = "Payment failed. Please try again.") => {
+    setFailureMessage(message);
+    setOrderStatus("failed");
+  };
+
   const handlePlaceOrder = async () => {
     if (!validateAddress()) return;
 
@@ -125,7 +141,13 @@ const Checkout = () => {
       return;
     }
 
-    const payload = buildPayload("COD");
+    const payload = buildPayload(
+      "COD",
+      "Pending",
+      {},
+      codDeliveryCharge,
+      codTotal
+    );
 
     try {
       setIsCodLoading(true);
@@ -175,7 +197,7 @@ const Checkout = () => {
     );
 
     if (!loaded) {
-      alert("Razorpay SDK failed to load");
+      showFailure("Razorpay SDK failed to load. Please try again.");
       return;
     }
 
@@ -191,7 +213,7 @@ const Checkout = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            amount: total,
+            amount: onlineTotal,
           }),
         }
       );
@@ -199,7 +221,7 @@ const Checkout = () => {
       const orderData = await orderResponse.json();
 
       if (!orderData.success) {
-        alert(orderData.message || "Order creation failed");
+        showFailure(orderData.message || "Order creation failed");
         return;
       }
 
@@ -213,6 +235,8 @@ const Checkout = () => {
 
         handler: async function (response) {
           try {
+            setOrderStatus("loading");
+
             const verifyResponse = await fetch(
               `${API_BASE_URL}/api/payment/verify-payment`,
               {
@@ -228,27 +252,36 @@ const Checkout = () => {
             const verifyData = await verifyResponse.json();
 
             if (!verifyData.success) {
-              alert(verifyData.message || "Payment verification failed");
+              showFailure(verifyData.message || "Payment verification failed");
               return;
             }
 
-            const payload = buildPayload("ONLINE", "Paid", {
-              razorpayOrderId: orderData.order.id,
-              razorpayPaymentId: response.razorpay_payment_id,
-            });
+            const payload = buildPayload(
+              "ONLINE",
+              "Paid",
+              {
+                razorpayOrderId: orderData.order.id,
+                razorpayPaymentId: response.razorpay_payment_id,
+              },
+              onlineDeliveryCharge,
+              onlineTotal
+            );
 
             const orderSaveData = await placeFinalOrder(payload, token);
 
             if (orderSaveData.success) {
               showSuccessAndRedirect();
             } else {
-              alert(
-                orderSaveData.message || "Payment succeeded but order save failed"
+              showFailure(
+                orderSaveData.message ||
+                  "Payment succeeded but order save failed"
               );
             }
           } catch (error) {
             console.log("Verify/save order error:", error);
-            alert("Payment done but something went wrong while saving order");
+            showFailure(
+              "Payment was completed, but something went wrong while saving the order."
+            );
           }
         },
 
@@ -269,15 +302,31 @@ const Checkout = () => {
         modal: {
           ondismiss: function () {
             setIsPaying(false);
+            if (orderStatus === "idle") {
+              showFailure("Payment was cancelled by the user.");
+            }
           },
         },
       };
 
       const paymentObject = new window.Razorpay(options);
+
+      paymentObject.on("payment.failed", function (response) {
+        console.log("Razorpay payment failed:", response);
+
+        const reason =
+          response?.error?.description ||
+          response?.error?.reason ||
+          "Payment failed. Please try again.";
+
+        setIsPaying(false);
+        showFailure(reason);
+      });
+
       paymentObject.open();
     } catch (error) {
       console.log("Payment error:", error);
-      alert("Something went wrong");
+      showFailure("Something went wrong while initiating payment.");
     } finally {
       setIsPaying(false);
     }
@@ -289,7 +338,7 @@ const Checkout = () => {
         <div className="flex flex-col items-center gap-6">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-lg font-semibold text-gray-700">
-            Placing your order...
+            Processing your order...
           </p>
         </div>
       </div>
@@ -298,8 +347,8 @@ const Checkout = () => {
 
   if (orderStatus === "success") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-6">
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <div className="flex flex-col items-center gap-6 text-center">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center animate-bounce">
             <svg
               className="w-10 h-10 text-green-600"
@@ -323,6 +372,57 @@ const Checkout = () => {
           <p className="text-gray-500 text-sm">
             Redirecting to your orders...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (orderStatus === "failed") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <div className="flex flex-col items-center gap-5 text-center max-w-md">
+          <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+            <svg
+              className="w-10 h-10 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800">Payment Failed</h2>
+
+          <p className="text-sm text-gray-500">
+            {failureMessage || "Your payment could not be completed."}
+          </p>
+
+          <div className="flex gap-3 mt-2">
+            <button
+              onClick={() => {
+                setOrderStatus("idle");
+                setFailureMessage("");
+              }}
+              className="px-5 py-3 rounded-xl bg-black text-white font-semibold hover:bg-gray-900 transition"
+            >
+              Try Again
+            </button>
+
+            <button
+              onClick={() => {
+                window.location.href = "/home/cart";
+              }}
+              className="px-5 py-3 rounded-xl bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200 transition"
+            >
+              Back to Cart
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -401,38 +501,50 @@ const Checkout = () => {
             </div>
 
             <div className="flex justify-between">
-              <span>Delivery</span>
+              <span>Online Delivery</span>
               <span className="text-green-600 font-bold">FREE</span>
             </div>
 
-            <div className="border-t pt-3 flex justify-between font-bold text-lg">
-              <span>Total</span>
-              <span>₹{total}</span>
+            <div className="flex justify-between">
+              <span>COD Charges</span>
+              <span>₹{codDeliveryCharge}</span>
+            </div>
+
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex justify-between font-semibold">
+                <span>Online Total</span>
+                <span>₹{onlineTotal}</span>
+              </div>
+
+              <div className="flex justify-between font-semibold">
+                <span>COD Total</span>
+                <span>₹{codTotal}</span>
+              </div>
             </div>
           </div>
 
           <button
             onClick={handlePayment}
             disabled={isPaying}
-            className={`w-full mt-3 py-3 rounded-xl font-semibold transition ${
+            className={`w-full mt-4 py-3 rounded-xl font-semibold transition ${
               isPaying
                 ? "bg-gray-400 cursor-not-allowed text-white"
                 : "bg-black hover:bg-gray-900 text-white"
             }`}
           >
-            {isPaying ? "Processing..." : "Pay Online"}
+            {isPaying ? "Processing..." : `Pay Online ₹${onlineTotal}`}
           </button>
 
           <button
             onClick={handlePlaceOrder}
             disabled={isCodLoading}
-            className={`w-full mt-6 py-3 rounded-xl font-semibold transition ${
+            className={`w-full mt-4 py-3 rounded-xl font-semibold transition ${
               isCodLoading
                 ? "bg-gray-400 cursor-not-allowed text-white"
                 : "bg-orange-500 hover:bg-orange-600 text-white"
             }`}
           >
-            {isCodLoading ? "Placing Order..." : "Pay on Delivery (+49)"}
+            {isCodLoading ? "Placing Order..." : `Pay on Delivery ₹${codTotal}`}
           </button>
         </div>
       </div>
