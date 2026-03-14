@@ -187,10 +187,55 @@ const Login = ({ setIsAuthenticated }) => {
             </div>
 
             <div className="flex justify-center mt-4">
-              <GoogleLogin
-                onSuccess={() => {}}
-                onError={() => handleerror("Google login failed")}
-              />
+           <GoogleLogin
+  onSuccess={async (credentialResponse) => {
+    try {
+      setIsLoading(true);
+
+      const response = await fetch(
+        "https://rr-mobiles-backend-1.onrender.com/auth/google-login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: credentialResponse.credential,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      const { success, token, user, message } = result;
+
+      if (success) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+        setIsAuthenticated(true);
+
+        setLoginStatus("loading");
+
+        setTimeout(() => {
+          setLoginStatus("success");
+
+          setTimeout(() => {
+            if (user?.role === "admin") {
+              navigate("/admin/add-product", { replace: true });
+            } else {
+              navigate("/home/shop", { replace: true });
+            }
+          }, 1500);
+        }, 1000);
+      } else {
+        setIsLoading(false);
+        handleerror(message || "Google login failed");
+      }
+    } catch (error) {
+      setIsLoading(false);
+      console.log("Google login error:", error);
+      handleerror("Google login failed");
+    }
+  }}
+  onError={() => handleerror("Google login failed")}
+/>
             </div>
           </form>
         </div>
