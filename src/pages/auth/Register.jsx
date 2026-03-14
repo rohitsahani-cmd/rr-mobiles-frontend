@@ -23,7 +23,6 @@ const Register = ({ setIsAuthenticated }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setSignInInfo((prev) => ({
       ...prev,
       [name]: value,
@@ -32,6 +31,9 @@ const Register = ({ setIsAuthenticated }) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    console.log("NORMAL SIGNUP TRIGGERED");
+
+    if (googleLoading) return;
 
     const { name, email, password } = singinInfo;
 
@@ -63,7 +65,7 @@ const Register = ({ setIsAuthenticated }) => {
         handleerror(message || "Signup failed");
       }
     } catch (error) {
-      console.log(error);
+      console.log("Signup error:", error);
       handleerror("Something went wrong");
     } finally {
       setLoading(false);
@@ -115,7 +117,7 @@ const Register = ({ setIsAuthenticated }) => {
         handleerror(message || "OTP verification failed");
       }
     } catch (error) {
-      console.log(error);
+      console.log("OTP verify error:", error);
       handleerror("Something went wrong while verifying OTP");
     } finally {
       setOtpLoading(false);
@@ -152,7 +154,7 @@ const Register = ({ setIsAuthenticated }) => {
         handleerror(message || "Failed to resend OTP");
       }
     } catch (error) {
-      console.log(error);
+      console.log("Resend OTP error:", error);
       handleerror("Something went wrong while resending OTP");
     } finally {
       setResendLoading(false);
@@ -160,6 +162,8 @@ const Register = ({ setIsAuthenticated }) => {
   };
 
   const handleGoogleSignupSuccess = async (credentialResponse) => {
+    console.log("GOOGLE SIGNUP TRIGGERED", credentialResponse);
+
     try {
       setGoogleLoading(true);
 
@@ -171,12 +175,13 @@ const Register = ({ setIsAuthenticated }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            token: credentialResponse.credential,
+            token: credentialResponse?.credential,
           }),
         }
       );
 
       const data = await response.json();
+      console.log("GOOGLE SIGNUP RESPONSE", data);
 
       if (data.success) {
         handlesuccess(data.message || "Google signup successful");
@@ -227,7 +232,9 @@ const Register = ({ setIsAuthenticated }) => {
           {!showOtpBox ? (
             <>
               <form onSubmit={handleSignup}>
-                <h2 className="text-3xl font-bold mb-8">Create Account 🚀</h2>
+                <h2 className="text-3xl font-bold mb-8">
+                  Create Account NEW 🚀
+                </h2>
 
                 <div className="mb-5">
                   <label className="block mb-2 text-sm font-semibold text-gray-300">
@@ -297,7 +304,13 @@ const Register = ({ setIsAuthenticated }) => {
                 <div className="h-px bg-white/10 flex-1"></div>
               </div>
 
-              <div className="flex justify-center">
+              <div
+                className="flex justify-center"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
                 <GoogleLogin
                   onSuccess={handleGoogleSignupSuccess}
                   onError={() => {
