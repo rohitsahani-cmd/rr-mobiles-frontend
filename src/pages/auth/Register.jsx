@@ -19,6 +19,7 @@ const Register = ({ setIsAuthenticated }) => {
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,13 +42,16 @@ const Register = ({ setIsAuthenticated }) => {
     try {
       setLoading(true);
 
-      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(singinInfo),
-      });
+      const response = await fetch(
+        "https://rr-mobiles-backend-1.onrender.com/auth/signup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(singinInfo),
+        }
+      );
 
       const result = await response.json();
       const { success, message } = result;
@@ -157,15 +161,20 @@ const Register = ({ setIsAuthenticated }) => {
 
   const handleGoogleSignupSuccess = async (credentialResponse) => {
     try {
-      const response = await fetch("https://rr-mobiles-backend-1.onrender.com/auth/google-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token: credentialResponse.credential,
-        }),
-      });
+      setGoogleLoading(true);
+
+      const response = await fetch(
+        "https://rr-mobiles-backend-1.onrender.com/auth/google-login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token: credentialResponse.credential,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -190,8 +199,23 @@ const Register = ({ setIsAuthenticated }) => {
     } catch (error) {
       console.log("Google signup error:", error);
       handleerror("Google signup failed");
+    } finally {
+      setGoogleLoading(false);
     }
   };
+
+  if (googleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-semibold text-gray-700">
+            Signing up with Google...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-[#0d0d0d] overflow-hidden">
@@ -201,66 +225,71 @@ const Register = ({ setIsAuthenticated }) => {
       <div className="w-full max-w-5xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl grid md:grid-cols-2 overflow-hidden relative z-10 transition duration-500">
         <div className="p-10 text-white animate-fadeIn">
           {!showOtpBox ? (
-            <form onSubmit={handleSignup}>
-              <h2 className="text-3xl font-bold mb-8">Create Account 🚀</h2>
+            <>
+              <form onSubmit={handleSignup}>
+                <h2 className="text-3xl font-bold mb-8">Create Account 🚀</h2>
 
-              <div className="mb-5">
-                <label className="block mb-2 text-sm font-semibold text-gray-300">
-                  Name
-                </label>
-                <input
-                  name="name"
-                  value={singinInfo.name}
-                  onChange={handleChange}
-                  type="text"
-                  autoFocus
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition placeholder-gray-400"
-                  placeholder="Enter your name"
-                />
-              </div>
+                <div className="mb-5">
+                  <label className="block mb-2 text-sm font-semibold text-gray-300">
+                    Name
+                  </label>
+                  <input
+                    name="name"
+                    value={singinInfo.name}
+                    onChange={handleChange}
+                    type="text"
+                    autoFocus
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition placeholder-gray-400"
+                    placeholder="Enter your name"
+                  />
+                </div>
 
-              <div className="mb-5">
-                <label className="block mb-2 text-sm font-semibold text-gray-300">
-                  Email address
-                </label>
-                <input
-                  name="email"
-                  value={singinInfo.email}
-                  onChange={handleChange}
-                  type="email"
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition placeholder-gray-400"
-                  placeholder="Enter your email"
-                />
-              </div>
+                <div className="mb-5">
+                  <label className="block mb-2 text-sm font-semibold text-gray-300">
+                    Email address
+                  </label>
+                  <input
+                    name="email"
+                    value={singinInfo.email}
+                    onChange={handleChange}
+                    type="email"
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition placeholder-gray-400"
+                    placeholder="Enter your email"
+                  />
+                </div>
 
-              <div className="mb-5">
-                <label className="block mb-2 text-sm font-semibold text-gray-300">
-                  Password
-                </label>
-                <input
-                  name="password"
-                  value={singinInfo.password}
-                  onChange={handleChange}
-                  type="password"
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition placeholder-gray-400"
-                  placeholder="Create password"
-                />
-              </div>
+                <div className="mb-5">
+                  <label className="block mb-2 text-sm font-semibold text-gray-300">
+                    Password
+                  </label>
+                  <input
+                    name="password"
+                    value={singinInfo.password}
+                    onChange={handleChange}
+                    type="password"
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition placeholder-gray-400"
+                    placeholder="Create password"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/40 text-white transition-all duration-300 py-3 rounded-xl font-semibold disabled:opacity-70"
-              >
-                {loading ? "Sending OTP..." : "Sign Up"}
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading || googleLoading}
+                  className="w-full bg-orange-500 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/40 text-white transition-all duration-300 py-3 rounded-xl font-semibold disabled:opacity-70"
+                >
+                  {loading ? "Sending OTP..." : "Sign Up"}
+                </button>
 
-              <div className="my-6 text-center text-gray-400 text-sm">
-                Already have an account?{" "}
-                <Link to="/auth/login" className="text-orange-400 font-semibold">
-                  Login
-                </Link>
-              </div>
+                <div className="my-6 text-center text-gray-400 text-sm">
+                  Already have an account?{" "}
+                  <Link
+                    to="/auth/login"
+                    className="text-orange-400 font-semibold"
+                  >
+                    Login
+                  </Link>
+                </div>
+              </form>
 
               <div className="flex items-center gap-3 my-5">
                 <div className="h-px bg-white/10 flex-1"></div>
@@ -273,17 +302,17 @@ const Register = ({ setIsAuthenticated }) => {
                   onSuccess={handleGoogleSignupSuccess}
                   onError={() => {
                     console.log("Google Signup Failed");
-                    handleerror("Google signup failed");}}
-                     theme="outline"
-                    size="large"
-                    shape="pill"
-                    text="continue_with"
-                    width="280"
-                    logo_alignment="left"
-                  
+                    handleerror("Google signup failed");
+                  }}
+                  theme="outline"
+                  size="large"
+                  shape="pill"
+                  text="continue_with"
+                  width="280"
+                  logo_alignment="left"
                 />
               </div>
-            </form>
+            </>
           ) : (
             <form onSubmit={handleVerifyOtp}>
               <h2 className="text-3xl font-bold mb-4">Verify OTP 🔐</h2>
