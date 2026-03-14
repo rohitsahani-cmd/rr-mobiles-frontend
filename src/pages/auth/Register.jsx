@@ -29,8 +29,7 @@ const Register = ({ setIsAuthenticated }) => {
     }));
   };
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
+  const handleSignup = async () => {
     console.log("NORMAL SIGNUP TRIGGERED");
 
     if (googleLoading) return;
@@ -72,9 +71,7 @@ const Register = ({ setIsAuthenticated }) => {
     }
   };
 
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-
+  const handleVerifyOtp = async () => {
     if (!otp) {
       return handleerror("Please enter OTP");
     }
@@ -165,6 +162,7 @@ const Register = ({ setIsAuthenticated }) => {
     console.log("GOOGLE SIGNUP TRIGGERED", credentialResponse);
 
     try {
+      setLoading(false);
       setGoogleLoading(true);
 
       const response = await fetch(
@@ -231,9 +229,9 @@ const Register = ({ setIsAuthenticated }) => {
         <div className="p-10 text-white animate-fadeIn">
           {!showOtpBox ? (
             <>
-              <form onSubmit={handleSignup}>
+              <div>
                 <h2 className="text-3xl font-bold mb-8">
-                  Create Account NEW 🚀
+                  Create Account FINAL 🚀
                 </h2>
 
                 <div className="mb-5">
@@ -280,7 +278,8 @@ const Register = ({ setIsAuthenticated }) => {
                 </div>
 
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSignup}
                   disabled={loading || googleLoading}
                   className="w-full bg-orange-500 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/40 text-white transition-all duration-300 py-3 rounded-xl font-semibold disabled:opacity-70"
                 >
@@ -296,7 +295,7 @@ const Register = ({ setIsAuthenticated }) => {
                     Login
                   </Link>
                 </div>
-              </form>
+              </div>
 
               <div className="flex items-center gap-3 my-5">
                 <div className="h-px bg-white/10 flex-1"></div>
@@ -304,13 +303,7 @@ const Register = ({ setIsAuthenticated }) => {
                 <div className="h-px bg-white/10 flex-1"></div>
               </div>
 
-              <div
-                className="flex justify-center"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
+              <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleSignupSuccess}
                   onError={() => {
@@ -327,7 +320,7 @@ const Register = ({ setIsAuthenticated }) => {
               </div>
             </>
           ) : (
-            <form onSubmit={handleVerifyOtp}>
+            <div>
               <h2 className="text-3xl font-bold mb-4">Verify OTP 🔐</h2>
               <p className="text-sm text-gray-300 mb-6">
                 We sent a 6-digit OTP to{" "}
@@ -351,7 +344,8 @@ const Register = ({ setIsAuthenticated }) => {
               </div>
 
               <button
-                type="submit"
+                type="button"
+                onClick={handleVerifyOtp}
                 disabled={otpLoading}
                 className="w-full bg-orange-500 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/40 text-white transition-all duration-300 py-3 rounded-xl font-semibold disabled:opacity-70"
               >
@@ -377,7 +371,7 @@ const Register = ({ setIsAuthenticated }) => {
               >
                 Back
               </button>
-            </form>
+            </div>
           )}
         </div>
 
