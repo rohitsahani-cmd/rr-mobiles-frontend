@@ -176,19 +176,7 @@ const Login = ({ setIsAuthenticated }) => {
             >
               {isLoading ? "Signing in..." : "Login"}
             </button>
-            <input
-  type="password"
-  name="password"
-  placeholder="Enter password"
-  value={loginInfo.password}
-  onChange={handleChange}
-/>
-
-<div className="forgot-wrapper">
-  <Link to="/forgot-password" className="forgot-link">
-    Forgot Password?
-  </Link>
-</div>
+            
 
             <div className="my-6 text-center text-gray-400 text-sm">
               Don’t have an account?{" "}
