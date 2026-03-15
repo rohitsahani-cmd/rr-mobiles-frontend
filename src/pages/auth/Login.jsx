@@ -13,7 +13,7 @@ const Login = ({ setIsAuthenticated }) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [loginStatus, setLoginStatus] = useState("idle");
+  const [loginStatus, setLoginStatus] = useState("idle"); // idle | loading | success
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +21,26 @@ const Login = ({ setIsAuthenticated }) => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const saveUserAndRedirect = (token, user) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("loggedInUser", JSON.stringify(user));
+    setIsAuthenticated(true);
+
+    setLoginStatus("loading");
+
+    setTimeout(() => {
+      setLoginStatus("success");
+
+      setTimeout(() => {
+        if (user?.role === "admin") {
+          navigate("/admin/add-product", { replace: true });
+        } else {
+          navigate("/home/shop", { replace: true });
+        }
+      }, 1200);
+    }, 800);
   };
 
   const handleLogin = async (e) => {
@@ -39,7 +59,9 @@ const Login = ({ setIsAuthenticated }) => {
         "https://rr-mobiles-backend-1.onrender.com/auth/login",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(loginInfo),
         }
       );
@@ -47,31 +69,47 @@ const Login = ({ setIsAuthenticated }) => {
       const result = await response.json();
       const { success, token, user, message } = result;
 
-      if (success) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("loggedInUser", JSON.stringify(user));
-        setIsAuthenticated(true);
-
-        setLoginStatus("loading");
-
-        setTimeout(() => {
-          setLoginStatus("success");
-
-          setTimeout(() => {
-            if (user?.role === "admin") {
-              navigate("/admin/add-product", { replace: true });
-            } else {
-              navigate("/home/shop", { replace: true });
-            }
-          }, 1500);
-        }, 1000);
-      } else {
+      if (!success) {
         setIsLoading(false);
-        handleerror(message || "Login failed");
+        return handleerror(message || "Login failed");
       }
-    } catch (err) {
+
+      saveUserAndRedirect(token, user);
+    } catch (error) {
       setIsLoading(false);
       handleerror("Server error or network issue");
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setIsLoading(true);
+
+      const response = await fetch(
+        "https://rr-mobiles-backend-1.onrender.com/auth/google-login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token: credentialResponse.credential,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      const { success, token, user, message } = result;
+
+      if (!success) {
+        setIsLoading(false);
+        return handleerror(message || "Google login failed");
+      }
+
+      saveUserAndRedirect(token, user);
+    } catch (error) {
+      setIsLoading(false);
+      handleerror("Google login failed");
     }
   };
 
@@ -117,16 +155,14 @@ const Login = ({ setIsAuthenticated }) => {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[#0d0d0d] overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center bg-[#0d0d0d] overflow-hidden px-4">
       <div className="absolute w-96 h-96 bg-orange-500/20 rounded-full blur-3xl top-[-100px] left-[-100px] animate-pulse"></div>
       <div className="absolute w-96 h-96 bg-red-500/20 rounded-full blur-3xl bottom-[-100px] right-[-100px] animate-pulse"></div>
 
       <div className="w-full max-w-5xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl grid md:grid-cols-2 overflow-hidden relative z-10">
-        <div className="p-10 text-white">
+        <div className="p-8 md:p-10 text-white">
           <form onSubmit={handleLogin}>
-            <h2 className="text-3xl font-bold mb-8">
-              Welcome to RR Mobiles
-            </h2>
+            <h2 className="text-3xl font-bold mb-8">Welcome to RR Mobiles</h2>
 
             <div className="mb-6">
               <label className="block mb-2 text-sm font-semibold text-gray-300">
@@ -137,8 +173,8 @@ const Login = ({ setIsAuthenticated }) => {
                 name="email"
                 value={loginInfo.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 outline-none transition"
                 placeholder="Enter your email"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 outline-none transition"
               />
             </div>
 
@@ -151,8 +187,8 @@ const Login = ({ setIsAuthenticated }) => {
                 name="password"
                 value={loginInfo.password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 outline-none transition"
                 placeholder="Enter your password"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 outline-none transition"
               />
             </div>
 
@@ -176,10 +212,9 @@ const Login = ({ setIsAuthenticated }) => {
             >
               {isLoading ? "Signing in..." : "Login"}
             </button>
-            
 
             <div className="my-6 text-center text-gray-400 text-sm">
-              Don’t have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 to="/auth/register"
                 className="text-orange-400 font-semibold"
@@ -190,53 +225,13 @@ const Login = ({ setIsAuthenticated }) => {
 
             <div className="flex justify-center mt-4">
               <GoogleLogin
-                onSuccess={async (credentialResponse) => {
-                  try {
-                    setIsLoading(true);
-
-                    const response = await fetch(
-                      "https://rr-mobiles-backend-1.onrender.com/auth/google-login",
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          token: credentialResponse.credential,
-                        }),
-                      }
-                    );
-
-                    const result = await response.json();
-                    const { success, token, user, message } = result;
-
-                    if (success) {
-                      localStorage.setItem("token", token);
-                      localStorage.setItem("loggedInUser", JSON.stringify(user));
-                      setIsAuthenticated(true);
-
-                      setLoginStatus("loading");
-
-                      setTimeout(() => {
-                        setLoginStatus("success");
-
-                        setTimeout(() => {
-                          if (user?.role === "admin") {
-                            navigate("/admin/add-product", { replace: true });
-                          } else {
-                            navigate("/home/shop", { replace: true });
-                          }
-                        }, 1500);
-                      }, 1000);
-                    } else {
-                      setIsLoading(false);
-                      handleerror(message || "Google login failed");
-                    }
-                  } catch (error) {
-                    setIsLoading(false);
-                    console.log("Google login error:", error);
-                    handleerror("Google login failed");
-                  }
-                }}
+                onSuccess={handleGoogleSuccess}
                 onError={() => handleerror("Google login failed")}
+                theme="outline"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+                logo_alignment="left"
               />
             </div>
           </form>
@@ -244,9 +239,7 @@ const Login = ({ setIsAuthenticated }) => {
 
         <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-orange-500 to-red-600 p-10">
           <div className="text-center text-black">
-            <h2 className="text-4xl font-bold mb-4">
-              RR Mobile Solutions
-            </h2>
+            <h2 className="text-4xl font-bold mb-4">RR Mobile Solutions</h2>
             <p className="text-orange-100">
               Premium gadgets. Trusted service. Fast delivery.
             </p>
