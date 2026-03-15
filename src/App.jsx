@@ -12,7 +12,7 @@ import AddProduct from "./AddProduct";
 import Home from "./components/Home";
 import TrackOrder from "./TrackOrder";
 import ResetPassword from "./ResetPassword";
-import ForgotPassword from "./ForgotPassword";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 import Checkauth from "./components/commoncomponent/Checkauth";
 import { ToastContainer } from "react-toastify";

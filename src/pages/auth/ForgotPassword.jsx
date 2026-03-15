@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { handleerror, handlesuccess } from "./pages/auth/utils.js";
+import { handleerror, handlesuccess } from "./utils.js";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
