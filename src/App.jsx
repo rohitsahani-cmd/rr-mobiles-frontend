@@ -46,11 +46,13 @@ function App() {
           <Route
             path="login"
             element={<Login setIsAuthenticated={setIsAuthenticated} />}
+            
           />
           
           <Route path="register" element={<Register />} />
           <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
+<Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
         </Route>
         

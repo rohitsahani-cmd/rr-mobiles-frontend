@@ -13,8 +13,7 @@ const Login = ({ setIsAuthenticated }) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [loginStatus, setLoginStatus] = useState("idle"); 
-  // idle | loading | success
+  const [loginStatus, setLoginStatus] = useState("idle");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,7 +52,6 @@ const Login = ({ setIsAuthenticated }) => {
         localStorage.setItem("loggedInUser", JSON.stringify(user));
         setIsAuthenticated(true);
 
-        // Show animation
         setLoginStatus("loading");
 
         setTimeout(() => {
@@ -67,7 +65,6 @@ const Login = ({ setIsAuthenticated }) => {
             }
           }, 1500);
         }, 1000);
-
       } else {
         setIsLoading(false);
         handleerror(message || "Login failed");
@@ -77,10 +74,6 @@ const Login = ({ setIsAuthenticated }) => {
       handleerror("Server error or network issue");
     }
   };
-
-  /* ===========================
-     SUCCESS / LOADING SCREENS
-     =========================== */
 
   if (loginStatus === "loading") {
     return (
@@ -123,10 +116,6 @@ const Login = ({ setIsAuthenticated }) => {
     );
   }
 
-  /* ===========================
-     MAIN LOGIN FORM
-     =========================== */
-
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-[#0d0d0d] overflow-hidden">
       <div className="absolute w-96 h-96 bg-orange-500/20 rounded-full blur-3xl top-[-100px] left-[-100px] animate-pulse"></div>
@@ -153,7 +142,7 @@ const Login = ({ setIsAuthenticated }) => {
               />
             </div>
 
-            <div className="mb-6">
+            <div className="mb-2">
               <label className="block mb-2 text-sm font-semibold text-gray-300">
                 Password
               </label>
@@ -165,6 +154,15 @@ const Login = ({ setIsAuthenticated }) => {
                 className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 outline-none transition"
                 placeholder="Enter your password"
               />
+            </div>
+
+            <div className="flex justify-end mb-6">
+              <Link
+                to="/auth/forgot-password"
+                className="text-sm text-orange-400 hover:text-orange-300 font-medium"
+              >
+                Forgot Password?
+              </Link>
             </div>
 
             <button
@@ -181,61 +179,64 @@ const Login = ({ setIsAuthenticated }) => {
 
             <div className="my-6 text-center text-gray-400 text-sm">
               Don’t have an account?{" "}
-              <Link to="/auth/register" className="text-orange-400 font-semibold">
+              <Link
+                to="/auth/register"
+                className="text-orange-400 font-semibold"
+              >
                 Register
               </Link>
             </div>
 
             <div className="flex justify-center mt-4">
-           <GoogleLogin
-  onSuccess={async (credentialResponse) => {
-    try {
-      setIsLoading(true);
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  try {
+                    setIsLoading(true);
 
-      const response = await fetch(
-        "https://rr-mobiles-backend-1.onrender.com/auth/google-login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: credentialResponse.credential,
-          }),
-        }
-      );
+                    const response = await fetch(
+                      "https://rr-mobiles-backend-1.onrender.com/auth/google-login",
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          token: credentialResponse.credential,
+                        }),
+                      }
+                    );
 
-      const result = await response.json();
-      const { success, token, user, message } = result;
+                    const result = await response.json();
+                    const { success, token, user, message } = result;
 
-      if (success) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("loggedInUser", JSON.stringify(user));
-        setIsAuthenticated(true);
+                    if (success) {
+                      localStorage.setItem("token", token);
+                      localStorage.setItem("loggedInUser", JSON.stringify(user));
+                      setIsAuthenticated(true);
 
-        setLoginStatus("loading");
+                      setLoginStatus("loading");
 
-        setTimeout(() => {
-          setLoginStatus("success");
+                      setTimeout(() => {
+                        setLoginStatus("success");
 
-          setTimeout(() => {
-            if (user?.role === "admin") {
-              navigate("/admin/add-product", { replace: true });
-            } else {
-              navigate("/home/shop", { replace: true });
-            }
-          }, 1500);
-        }, 1000);
-      } else {
-        setIsLoading(false);
-        handleerror(message || "Google login failed");
-      }
-    } catch (error) {
-      setIsLoading(false);
-      console.log("Google login error:", error);
-      handleerror("Google login failed");
-    }
-  }}
-  onError={() => handleerror("Google login failed")}
-/>
+                        setTimeout(() => {
+                          if (user?.role === "admin") {
+                            navigate("/admin/add-product", { replace: true });
+                          } else {
+                            navigate("/home/shop", { replace: true });
+                          }
+                        }, 1500);
+                      }, 1000);
+                    } else {
+                      setIsLoading(false);
+                      handleerror(message || "Google login failed");
+                    }
+                  } catch (error) {
+                    setIsLoading(false);
+                    console.log("Google login error:", error);
+                    handleerror("Google login failed");
+                  }
+                }}
+                onError={() => handleerror("Google login failed")}
+              />
             </div>
           </form>
         </div>
