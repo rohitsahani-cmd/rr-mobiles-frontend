@@ -1,64 +1,26 @@
-// import React from 'react'
-// import { Navigate, useLocation } from 'react-router-dom'
-
-// const Checkauth = ({ isAuthenticated, user, children }) => {
-//   const location = useLocation()
-
-//   const isLoginPage = location.pathname.includes('/login')
-//   const isRegisterPage = location.pathname.includes('/register')
-//   const isAuthPage = isLoginPage || isRegisterPage
-//   const isAdminPage = location.pathname.includes('/admin')
-//   const isHomePage = location.pathname.includes('/home')
-//   const isShopPage = location.pathname.includes('/shop')
-
-//   // Not logged in -> only allow auth pages
-//   if (!isAuthenticated && !isAuthPage) {
-//     return <Navigate to="/auth/login" />
-//   }
-
-//   // Logged in -> don't allow login/register again
-//   if (isAuthenticated && isAuthPage) {
-//     if (user?.role === 'admin') {
-//       return <Navigate to="/admin/sidebar" />
-//     } else {
-//       return <Navigate to="/home" />
-//     }
-//   }
-
-//   // Normal user trying admin page
-//   if (isAuthenticated && user?.role !== 'admin' && isAdminPage) {
-//     return <Navigate to="/unauth-page" />
-//   }
-
-//   // Admin trying user pages
-//   if (isAuthenticated && user?.role === 'admin' && (isHomePage || isShopPage)) {
-//     return <Navigate to="/admin/sidebar" />
-//   }
-
-//   return <>{children}</>
-// }
-
-// export default Checkauth
-
-
-//METHOD-2
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 const Checkauth = ({ isAuthenticated, user, children }) => {
   const location = useLocation();
-
   const pathname = location.pathname;
 
-  const isLoginPage = pathname.includes("/login");
-  const isRegisterPage = pathname.includes("/register");
-  const isAuthPage = isLoginPage || isRegisterPage;
+  const isLoginPage = pathname === "/auth/login";
+  const isRegisterPage = pathname === "/auth/register";
+  const isForgotPasswordPage = pathname === "/auth/forgot-password";
+  const isResetPasswordPage = pathname.startsWith("/auth/reset-password");
+
+  const isAuthPage =
+    isLoginPage ||
+    isRegisterPage ||
+    isForgotPasswordPage ||
+    isResetPasswordPage;
 
   const isAdminPage = pathname.startsWith("/admin");
 
   const isPublicPage =
-    pathname.startsWith("/home") ||
     pathname === "/" ||
+    pathname.startsWith("/home") ||
     pathname.includes("/products") ||
     pathname.includes("/shop") ||
     pathname.includes("/cart") ||
@@ -66,28 +28,26 @@ const Checkauth = ({ isAuthenticated, user, children }) => {
     pathname.includes("/watchlist");
 
   const isProtectedUserPage =
-    pathname.includes("/orders") ||
-    pathname.includes("/checkout");
+    pathname.includes("/orders") || pathname.includes("/checkout");
 
+  // Not logged in
   if (!isAuthenticated) {
-    if (isAuthPage) {
-      return <>{children}</>;
-    }
-
-    if (isPublicPage) {
+    if (isAuthPage || isPublicPage) {
       return <>{children}</>;
     }
 
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  if (isAuthenticated && isAuthPage) {
+  // Logged in user should not revisit login/register
+  if (isAuthenticated && (isLoginPage || isRegisterPage)) {
     if (user?.role === "admin") {
       return <Navigate to="/admin/add-product" replace />;
     }
     return <Navigate to="/home/shop" replace />;
   }
 
+  // Admin-only routes
   if (isAdminPage) {
     if (user?.role !== "admin") {
       return <Navigate to="/home/shop" replace />;
@@ -95,6 +55,7 @@ const Checkauth = ({ isAuthenticated, user, children }) => {
     return <>{children}</>;
   }
 
+  // Admin should not access user protected pages
   if (isAuthenticated && user?.role === "admin" && isProtectedUserPage) {
     return <Navigate to="/admin/add-product" replace />;
   }
