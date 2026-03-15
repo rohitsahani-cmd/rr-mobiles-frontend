@@ -18,8 +18,6 @@ const Checkout = () => {
 
   const [isPaying, setIsPaying] = useState(false);
   const [isCodLoading, setIsCodLoading] = useState(false);
-
-  // idle | loading | success | failed
   const [orderStatus, setOrderStatus] = useState("idle");
   const [failureMessage, setFailureMessage] = useState("");
 
@@ -30,13 +28,11 @@ const Checkout = () => {
 
   const subtotal = useMemo(() => {
     return cartItems.reduce(
-      (sum, item) => sum + Number(item.price) * item.quantity,
+      (sum, item) => sum + Number(item.price) * Number(item.quantity),
       0
     );
   }, [cartItems]);
 
-  // Online payment = free delivery
-  // COD = extra 49
   const onlineDeliveryCharge = 0;
   const codDeliveryCharge = cartItems.length > 0 ? 49 : 0;
 
@@ -203,6 +199,8 @@ const Checkout = () => {
 
     try {
       setIsPaying(true);
+      setFailureMessage("");
+      setOrderStatus("idle");
 
       const orderResponse = await fetch(
         `${API_BASE_URL}/api/payment/create-order`,
@@ -220,13 +218,18 @@ const Checkout = () => {
 
       const orderData = await orderResponse.json();
 
-      if (!orderData.success) {
+      console.log("ONLINE TOTAL:", onlineTotal);
+      console.log("ORDER DATA:", orderData);
+      console.log("RAZORPAY KEY:", "rzp_test_SQD3b5534PanLJ");
+
+      if (!orderData.success || !orderData.order?.id) {
+        setIsPaying(false);
         showFailure(orderData.message || "Order creation failed");
         return;
       }
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: "rzp_test_SQD3b5534PanLJ",
         amount: orderData.order.amount,
         currency: orderData.order.currency,
         name: "RR Mobile Solutions",
@@ -245,13 +248,19 @@ const Checkout = () => {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(response),
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
               }
             );
 
             const verifyData = await verifyResponse.json();
+            console.log("VERIFY DATA:", verifyData);
 
             if (!verifyData.success) {
+              setIsPaying(false);
               showFailure(verifyData.message || "Payment verification failed");
               return;
             }
@@ -260,7 +269,7 @@ const Checkout = () => {
               "ONLINE",
               "Paid",
               {
-                razorpayOrderId: orderData.order.id,
+                razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
               },
               onlineDeliveryCharge,
@@ -268,10 +277,13 @@ const Checkout = () => {
             );
 
             const orderSaveData = await placeFinalOrder(payload, token);
+            console.log("ORDER SAVE DATA:", orderSaveData);
 
             if (orderSaveData.success) {
+              setIsPaying(false);
               showSuccessAndRedirect();
             } else {
+              setIsPaying(false);
               showFailure(
                 orderSaveData.message ||
                   "Payment succeeded but order save failed"
@@ -279,6 +291,7 @@ const Checkout = () => {
             }
           } catch (error) {
             console.log("Verify/save order error:", error);
+            setIsPaying(false);
             showFailure(
               "Payment was completed, but something went wrong while saving the order."
             );
@@ -312,11 +325,13 @@ const Checkout = () => {
       const paymentObject = new window.Razorpay(options);
 
       paymentObject.on("payment.failed", function (response) {
-        console.log("Razorpay payment failed:", response);
+        console.log("FULL RAZORPAY FAILURE:", response);
+        console.log("ERROR OBJECT:", response?.error);
 
         const reason =
           response?.error?.description ||
           response?.error?.reason ||
+          response?.error?.code ||
           "Payment failed. Please try again.";
 
         setIsPaying(false);
@@ -326,9 +341,8 @@ const Checkout = () => {
       paymentObject.open();
     } catch (error) {
       console.log("Payment error:", error);
-      showFailure("Something went wrong while initiating payment.");
-    } finally {
       setIsPaying(false);
+      showFailure("Something went wrong while initiating payment.");
     }
   };
 
