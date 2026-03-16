@@ -229,7 +229,7 @@ const Checkout = () => {
       }
 
       const options = {
-        key: "rzp_test_SQD3b5534PanLJ",
+        key: "rzp_test_SRpbvKT0eaCgp2",
         amount: orderData.order.amount,
         currency: orderData.order.currency,
         name: "RR Mobile Solutions",
