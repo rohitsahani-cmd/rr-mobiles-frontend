@@ -32,7 +32,7 @@ const getRandomReviews = (id) => {
   return 100 + (seed % 401);
 };
 
-const Products = () => {
+const Products = () => {//rohith sahani products
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
