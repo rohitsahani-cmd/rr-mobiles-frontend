@@ -220,7 +220,7 @@ const Checkout = () => {
 
       console.log("ONLINE TOTAL:", onlineTotal);
       console.log("ORDER DATA:", orderData);
-      console.log("RAZORPAY KEY:", "rzp_test_SQD3b5534PanLJ");
+      console.log("RAZORPAY KEY:", "rzp_live_ST80Of9mwuM8Ik");
 
       if (!orderData.success || !orderData.order?.id) {
         setIsPaying(false);
@@ -229,7 +229,7 @@ const Checkout = () => {
       }
 
       const options = {
-        key: "rzp_test_SRpbvKT0eaCgp2",
+        key: "rzp_live_ST80Of9mwuM8Ik",
         amount: orderData.order.amount,
         currency: orderData.order.currency,
         name: "RR Mobile Solutions",
